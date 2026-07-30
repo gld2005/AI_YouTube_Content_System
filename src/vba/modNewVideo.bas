@@ -8,6 +8,7 @@ Public Sub NewVideoScript()
     Dim scriptIndex As ListObject
     Dim projectRow As ListRow
     Dim scriptRow As ListRow
+    Dim existingProject As ListRow
     Dim currentSheetName As String
     Dim previousSheetName As String
 
@@ -73,3 +74,50 @@ Private Sub CreateScriptSheets(ByVal currentSheetName As String, ByVal previousS
     ActiveSheet.Name = previousSheetName
     ActiveSheet.Range("A1").Value = "脚本上一版｜待首次保存版本"
 End Sub
+
+Public Function CreateVideoForSmokeTest(ByVal videoId As String, ByVal videoTitle As String) As Boolean
+    Dim projects As ListObject
+    Dim scriptIndex As ListObject
+    Dim projectRow As ListRow
+    Dim scriptRow As ListRow
+    Dim currentSheetName As String
+    Dim previousSheetName As String
+
+    On Error GoTo Failed
+    Set projects = GetTable(PROJECT_TABLE_NAME)
+    Set existingProject = FindTableRow(projects, "Video ID", videoId)
+    If Not existingProject Is Nothing Then GoTo Failed
+    currentSheetName = SafeSheetName(videoId & "｜脚本")
+    previousSheetName = SafeSheetName(videoId & "｜上一版")
+    If SheetExists(currentSheetName) Or SheetExists(previousSheetName) Then GoTo Failed
+
+    Set projectRow = projects.ListRows.Add
+    SetRowValue projectRow, projects, "Video ID", videoId
+    SetRowValue projectRow, projects, "视频标题", videoTitle
+    SetRowValue projectRow, projects, "Series ID", "SER-UNCLASSIFIED"
+    SetRowValue projectRow, projects, "项目状态", "策划中"
+    SetRowValue projectRow, projects, "脚本状态", "未开始"
+    SetRowValue projectRow, projects, "优先级", "P1"
+    SetRowValue projectRow, projects, "开始日期", Date
+    SetRowValue projectRow, projects, "最后更新", Date
+    SetRowValue projectRow, projects, "当前脚本页", currentSheetName
+    SetRowValue projectRow, projects, "上一版脚本页", previousSheetName
+    SetRowValue projectRow, projects, "当前版本", "V1"
+    SetRowValue projectRow, projects, "主项目", "否"
+    CreateScriptSheets currentSheetName, previousSheetName
+
+    Set scriptIndex = GetTable(SCRIPT_INDEX_TABLE_NAME)
+    Set scriptRow = scriptIndex.ListRows.Add
+    SetRowValue scriptRow, scriptIndex, "Video ID", videoId
+    SetRowValue scriptRow, scriptIndex, "视频标题", videoTitle
+    SetRowValue scriptRow, scriptIndex, "当前脚本页", currentSheetName
+    SetRowValue scriptRow, scriptIndex, "上一版脚本页", previousSheetName
+    SetRowValue scriptRow, scriptIndex, "当前版本", "V1"
+    SetRowValue scriptRow, scriptIndex, "脚本状态", "未开始"
+    SetRowValue scriptRow, scriptIndex, "最后更新", Date
+    CreateVideoForSmokeTest = True
+    Exit Function
+Failed:
+    Debug.Print "Smoke-test video creation failed for " & videoId
+    CreateVideoForSmokeTest = False
+End Function

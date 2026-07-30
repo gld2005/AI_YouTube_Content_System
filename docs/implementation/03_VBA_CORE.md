@@ -19,6 +19,12 @@ To import and compile the VBA modules, the workbook owner must explicitly enable
 
 The import script creates `working/AI_YouTube_Content_System_Working.xlsm` and imports all `.bas` modules. It fails closed when the setting is absent.
 
+## Import Verification
+
+After AccessVBOM was explicitly enabled, the import script created the macro-enabled working workbook and the VBA project was verified to contain `modCore`, `modNavigation`, `modNewVideo`, and `modVersioning`.
+
+A non-interactive smoke-test module was added for execution in a disposable workbook copy. Automated Excel execution currently opens a hidden VBA dialog instead of returning a diagnostic through COM. The next validation action is therefore an interactive compile in visible Excel: open the macro-enabled working workbook, open the VBA editor, choose **Debug > Compile VBAProject**, and report any highlighted line or error text. Do not dismiss a compile error without recording it.
+
 ## Deferred Behavior
 
 The script page currently provides the required visual template only. Dynamic chapter/paragraph operations, stable paragraph IDs, recycle storage, restoration, and paragraph-level difference highlighting require the Phase 4 script-record model and will be implemented against that structure. This avoids fabricating or deleting content before the record model exists.
