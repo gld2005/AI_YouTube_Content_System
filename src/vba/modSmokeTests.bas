@@ -180,3 +180,39 @@ Public Function RunPhase7SmokeTest() As String
 Failed:
     RunPhase7SmokeTest = "FAIL: Phase 7 relationship smoke test did not complete. " & Err.Description
 End Function
+
+Public Function RunPhase8SmokeTest() As String
+    Const testVideoId As String = "TEST-PHASE8-001"
+    Const testTitle As String = "Phase 8 Approval Smoke Test"
+    Dim projects As ListObject, projectRow As ListRow, scriptSheet As Worksheet
+    Dim paragraphId As String, paragraphRow As Long, suggestionId As String
+    Dim stage As String
+
+    On Error GoTo Failed
+    stage = "create"
+    If Not CreateVideoForSmokeTest(testVideoId, testTitle) Then GoTo Failed
+    Set projects = GetTable(PROJECT_TABLE_NAME)
+    Set projectRow = FindTableRow(projects, 1, testVideoId)
+    Set scriptSheet = ThisWorkbook.Worksheets(CStr(projectRow.Range.Cells(1, 28).Value))
+    stage = "paragraph"
+    AddChapterByValues scriptSheet, "Phase 8 Smoke Test Chapter"
+    paragraphId = AddParagraphByValues(scriptSheet, "Original approved text.", "", "Drafting", "00:15")
+    paragraphRow = FindParagraphRow(scriptSheet, paragraphId)
+    stage = "queue"
+    suggestionId = QueueAiSuggestion(testVideoId, "CH-01", paragraphId, "Polish Current Paragraph", "Original approved text.", "Candidate text awaiting approval.")
+    If Len(suggestionId) = 0 Then GoTo Failed
+    stage = "pending check"
+    If CStr(scriptSheet.Cells(paragraphRow + 1, "B").Value) <> "Original approved text." Then GoTo Failed
+    stage = "approval"
+    If Not ApproveFullAdoption(suggestionId, scriptSheet) Then
+        RunPhase8SmokeTest = "FAIL: Approval failed. " & LastApprovalError
+        Exit Function
+    End If
+    If CStr(scriptSheet.Cells(paragraphRow + 1, "B").Value) <> "Candidate text awaiting approval." Then GoTo Failed
+    stage = "publish review"
+    If Not AddPublishReview(testVideoId, "YouTube", "Smoke Test Final Title") Then GoTo Failed
+    RunPhase8SmokeTest = "PASS: AI suggestion approval is gated and publish review was recorded."
+    Exit Function
+Failed:
+    RunPhase8SmokeTest = "FAIL: Phase 8 approval smoke test did not complete at " & stage & ". " & Err.Description
+End Function

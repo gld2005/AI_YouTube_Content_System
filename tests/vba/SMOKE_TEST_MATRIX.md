@@ -14,4 +14,5 @@ Run these tests in a disposable copy after importing the modules into the macro-
 | Script presentation | Run `RunPhase5SmokeTest` in a disposable copy. | Story flow, collapsible production sidebar, four sidebar groups, six paragraph types, and seven statuses are available. |
 | Versioning and recycle | Run `RunPhase6SmokeTest` in a disposable copy. | Changed narration is marked before the explicit version replacement, and a deleted paragraph is restored from the recycle store. |
 | Content relationships | Run `RunPhase7SmokeTest` in a disposable copy. | A source, evidence card, research link, packaging concept, project asset, and paragraph link are created. |
+| Approval and publish review | Run `RunPhase8SmokeTest` in a disposable copy. | A pending candidate does not change script text; explicit adoption updates only its linked paragraph and records a publish review. |
 | Security gate | Run `scripts/import_vba_modules.ps1` without AccessVBOM enabled. | The script fails with a clear English message and does not change the Trust Center setting. |
