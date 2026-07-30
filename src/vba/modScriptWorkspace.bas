@@ -47,6 +47,7 @@ Public Sub InitializeScriptWorkspace(ByVal ws As Worksheet, ByVal videoId As Str
     ws.Range("A" & CONTENT_START_ROW).Font.Color = RGB(120, 120, 120)
     ws.Range("A:K").VerticalAlignment = xlTop
     ws.Outline.ShowLevels ColumnLevels:=2
+    InitializeRecycleArea ws
     Application.ScreenUpdating = True
 End Sub
 
@@ -174,7 +175,7 @@ End Sub
 
 Private Function NextContentRow(ByVal ws As Worksheet) As Long
     Dim lastCell As Range
-    Set lastCell = ws.Range("A:G").Find(What:="*", After:=ws.Range("A1"), LookIn:=xlFormulas, SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
+    Set lastCell = ws.Range("A12:G850").Find(What:="*", After:=ws.Range("A12"), LookIn:=xlFormulas, SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
     If lastCell Is Nothing Then NextContentRow = CONTENT_START_ROW Else NextContentRow = lastCell.Row + 2
 End Function
 

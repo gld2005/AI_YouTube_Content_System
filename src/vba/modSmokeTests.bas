@@ -92,3 +92,50 @@ Public Function RunPhase5SmokeTest() As String
 Failed:
     RunPhase5SmokeTest = "FAIL: Phase 5 script controls smoke test did not complete. " & Err.Description
 End Function
+
+Public Function RunPhase6SmokeTest() As String
+    Const testVideoId As String = "TEST-PHASE6-001"
+    Const testTitle As String = "Phase 6 Version and Recycle Smoke Test"
+    Dim projects As ListObject, projectRow As ListRow, scriptSheet As Worksheet
+    Dim firstId As String, secondId As String, firstRow As Long, secondRow As Long, recycleId As String
+    Dim stage As String
+
+    On Error GoTo Failed
+    stage = "create"
+    If Not CreateVideoForSmokeTest(testVideoId, testTitle) Then GoTo Failed
+    stage = "project"
+    Set projects = GetTable(PROJECT_TABLE_NAME)
+    Set projectRow = FindTableRow(projects, 1, testVideoId)
+    If projectRow Is Nothing Then GoTo Failed
+    Set scriptSheet = ThisWorkbook.Worksheets(CStr(projectRow.Range.Cells(1, 28).Value))
+    stage = "chapter"
+    AddChapterByValues scriptSheet, "Phase 6 Smoke Test Chapter"
+    stage = "first paragraph"
+    firstId = AddParagraphByValues(scriptSheet, "Original narration.", "Original visual note.", "Drafting", "00:15")
+    stage = "second paragraph"
+    secondId = AddParagraphByValues(scriptSheet, "Unchanged narration.", "Unchanged visual note.", "Drafting", "00:15")
+    stage = "baseline save"
+    If Not SaveVersionForVideo(testVideoId, "Baseline") Then
+        RunPhase6SmokeTest = "FAIL: Baseline version save failed. " & LastVersionError
+        Exit Function
+    End If
+    stage = "difference"
+    firstRow = FindParagraphRow(scriptSheet, firstId)
+    scriptSheet.Cells(firstRow + 1, "B").Value = "Changed narration."
+    If Not SaveVersionForVideo(testVideoId, "Changed narration") Then GoTo Failed
+    If scriptSheet.Cells(firstRow + 1, "B").Interior.Color <> RGB(237, 204, 188) Then GoTo Failed
+    stage = "paragraph delete"
+    secondRow = FindParagraphRow(scriptSheet, secondId)
+    scriptSheet.Activate
+    scriptSheet.Cells(secondRow, "A").Select
+    DeleteSelectedParagraph
+    recycleId = NewestRecycleItemId(scriptSheet)
+    If Len(recycleId) = 0 Then GoTo Failed
+    If Not RestoreRecycleItem(scriptSheet, recycleId) Then GoTo Failed
+    stage = "paragraph restore"
+    If FindParagraphRow(scriptSheet, secondId) = 0 Then GoTo Failed
+    RunPhase6SmokeTest = "PASS: version differences and restorable recycle items are working."
+    Exit Function
+Failed:
+    RunPhase6SmokeTest = "FAIL: Phase 6 version and recycle smoke test did not complete at " & stage & ". " & Err.Description
+End Function
