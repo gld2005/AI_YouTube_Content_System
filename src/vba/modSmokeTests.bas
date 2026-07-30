@@ -134,6 +134,15 @@ Public Function RunPhase6SmokeTest() As String
     If Not RestoreRecycleItem(scriptSheet, recycleId) Then GoTo Failed
     stage = "paragraph restore"
     If FindParagraphRow(scriptSheet, secondId) = 0 Then GoTo Failed
+    scriptSheet.Activate
+    scriptSheet.Cells(14, "A").Select
+    stage = "chapter delete"
+    DeleteSelectedChapter
+    recycleId = NewestRecycleItemId(scriptSheet)
+    If Len(recycleId) = 0 Then GoTo Failed
+    stage = "chapter restore"
+    If Not RestoreRecycleItem(scriptSheet, recycleId) Then GoTo Failed
+    If Left$(CStr(scriptSheet.Cells(14, "A").Value), 3) <> "CH-" Then GoTo Failed
     RunPhase6SmokeTest = "PASS: version differences and restorable recycle items are working."
     Exit Function
 Failed:

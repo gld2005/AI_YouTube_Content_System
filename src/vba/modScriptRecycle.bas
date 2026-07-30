@@ -31,14 +31,14 @@ Public Sub DeleteSelectedParagraph()
 End Sub
 
 Public Sub DeleteSelectedChapter()
-    Dim chapterRow As Long, nextChapterRow As Long, rowCount As Long
+    Dim chapterRow As Long, followingChapterRow As Long, rowCount As Long
     chapterRow = SelectedChapterRow(ActiveSheet, ActiveCell.Row)
     If chapterRow = 0 Then
         ShowUserError "Select a chapter block before deleting it.", "Delete Chapter requires a selected chapter block."
         Exit Sub
     End If
-    nextChapterRow = NextChapterRow(ActiveSheet, chapterRow)
-    rowCount = nextChapterRow - chapterRow
+    followingChapterRow = NextChapterRow(ActiveSheet, chapterRow)
+    rowCount = followingChapterRow - chapterRow
     StoreRecycleItem ActiveSheet, "Chapter", chapterRow, rowCount
     ActiveSheet.Rows(chapterRow & ":" & chapterRow + rowCount - 1).Delete
     RefreshRecycleArea ActiveSheet
