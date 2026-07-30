@@ -13,6 +13,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from ai_contract import AiContractError, invoke as invoke_ai
+
 VERSION = "0.1.0"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
@@ -76,8 +78,8 @@ class AssistantHandler(BaseHTTPRequestHandler):
             self.send_json(HTTPStatus.OK, self.response(str(uuid.uuid4()), "ok", {
                 "providers": [],
                 "parsers": [],
-                "actions": ["folders.create"],
-                "endpoints": ["/v1/health", "/v1/capabilities", "/v1/folders/create", "/v1/operations/{id}/cancel"],
+                "actions": ["folders.create", "ai.invoke"],
+                "endpoints": ["/v1/health", "/v1/capabilities", "/v1/ai/invoke", "/v1/folders/create", "/v1/operations/{id}/cancel"],
                 "cloud_compatible": True,
             }))
             return
@@ -94,10 +96,22 @@ class AssistantHandler(BaseHTTPRequestHandler):
         if self.path == "/v1/folders/create":
             self.create_folders(request_id, payload)
             return
+        if self.path == "/v1/ai/invoke":
+            self.invoke_ai(request_id, payload)
+            return
         if self.path.startswith("/v1/operations/") and self.path.endswith("/cancel"):
             self.send_json(HTTPStatus.NOT_IMPLEMENTED, self.response(request_id, "error", issue=error("not_enabled", "Operation cancellation is not enabled yet.", "R6 has no long-running operations to cancel.", False, ["Wait for the current request to finish"])))
             return
-        self.send_json(HTTPStatus.NOT_IMPLEMENTED, self.response(request_id, "error", issue=error("not_enabled", "This assistant action is not enabled yet.", f"R6 does not implement {self.path}.", False, ["Check capabilities", "Use the workbook manual workflow"])))
+        self.send_json(HTTPStatus.NOT_IMPLEMENTED, self.response(request_id, "error", issue=error("not_enabled", "This assistant action is not enabled yet.", f"The current assistant does not implement {self.path}.", False, ["Check capabilities", "Use the workbook manual workflow"])))
+
+    def invoke_ai(self, request_id: str, payload: dict[str, Any]) -> None:
+        try:
+            data = invoke_ai(payload)
+        except AiContractError as exc:
+            status = HTTPStatus.SERVICE_UNAVAILABLE if exc.retryable else HTTPStatus.BAD_REQUEST
+            self.send_json(status, self.response(request_id, "error", issue=error(exc.code, exc.user_message, str(exc), exc.retryable, ["Check provider settings", "Retry only after correcting the request or service"])))
+            return
+        self.send_json(HTTPStatus.OK, self.response(request_id, "pending_approval", data, ["AI output is pending approval and has not modified workbook content."]))
 
     def create_folders(self, request_id: str, payload: dict[str, Any]) -> None:
         body = payload.get("payload") if isinstance(payload.get("payload"), dict) else {}

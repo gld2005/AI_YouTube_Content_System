@@ -1,0 +1,7 @@
+{
+  "openai": {"base_url": "https://api.openai.com/v1/chat/completions", "model_environment_variable": "CONTENT_ASSISTANT_OPENAI_MODEL", "default_model": "gpt-4.1-mini", "api_key_environment_variable": "OPENAI_API_KEY", "compatibility_mode": "openai"},
+  "deepseek": {"base_url": "https://api.deepseek.com/chat/completions", "model_environment_variable": "CONTENT_ASSISTANT_DEEPSEEK_MODEL", "default_model": "deepseek-chat", "api_key_environment_variable": "DEEPSEEK_API_KEY", "compatibility_mode": "openai"},
+  "openrouter": {"base_url": "https://openrouter.ai/api/v1/chat/completions", "model_environment_variable": "CONTENT_ASSISTANT_OPENROUTER_MODEL", "default_model": "openai/gpt-4.1-mini", "api_key_environment_variable": "OPENROUTER_API_KEY", "compatibility_mode": "openai"},
+  "alibaba_compatible": {"base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "model_environment_variable": "CONTENT_ASSISTANT_ALIBABA_MODEL", "default_model": "qwen-plus", "api_key_environment_variable": "DASHSCOPE_API_KEY", "compatibility_mode": "openai"},
+  "custom_compatible": {"base_url_environment_variable": "CONTENT_ASSISTANT_CUSTOM_BASE_URL", "model_environment_variable": "CONTENT_ASSISTANT_CUSTOM_MODEL", "api_key_environment_variable": "CONTENT_ASSISTANT_CUSTOM_API_KEY", "compatibility_mode": "openai"}
+}
