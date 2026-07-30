@@ -11,8 +11,8 @@ R8 adds local source parsing with visible recovery paths. Parsed metadata and ex
 | Ordinary web pages and news articles | Attempts title and readable text extraction. |
 | YouTube | Attempts direct page extraction; unavailable subtitles require a pasted subtitle or export. |
 | Bilibili, Reddit, X / Twitter | Returns a clear semi-automatic recovery message because access may be blocked. |
-| URL PDF and local PDF | Returns a PDF-parser recovery message; it does not falsely claim extraction. |
-| Local text, Markdown, CSV, HTML, JSON, SRT, VTT | Extracts local text only from an explicitly provided absolute path. |
+| URL PDF and local PDF | Extracts a PDF text layer; image-only or encrypted PDFs return OCR/manual recovery. |
+| Local DOCX, text, Markdown, CSV, HTML, JSON, SRT, VTT | Extracts text only from an explicitly provided absolute path. |
 | Podcasts and other audio | Requests a transcript or exported text. |
 
 ## Endpoints

@@ -91,3 +91,14 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertEqual(body["error"]["code"], "semi_automatic_source")
         self.assertIn("Paste source text", body["error"]["recovery_actions"])
+
+    def test_local_docx_parsing(self):
+        from docx import Document
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            document_path = Path(temporary_directory) / "notes.docx"
+            document = Document()
+            document.add_paragraph("Research note")
+            document.save(document_path)
+            status, body = self.request("POST", "/v1/files/parse", {"payload": {"path": str(document_path)}})
+            self.assertEqual(status, 200)
+            self.assertIn("Research note", body["data"]["text"])
