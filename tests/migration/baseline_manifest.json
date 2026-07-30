@@ -1,0 +1,33 @@
+{
+  "sourceWorkbook": "reference/AI_YouTube_Content_Pipeline_Baseline.xlsx",
+  "sourceSha256": "B92E95248398294C1D847D2B0450E1CF01185F59DE5E19888FFCA1AAD65649A1",
+  "expectedSheets": [
+    "使用说明",
+    "总览",
+    "选题池",
+    "视频项目",
+    "任务计划",
+    "研究库",
+    "素材清单",
+    "发布复盘",
+    "设置"
+  ],
+  "minimumSeedRecords": {
+    "topics": 2,
+    "videoProjects": 1,
+    "tasks": 38,
+    "sources": 1,
+    "assets": 3,
+    "publishReviewRecords": 1,
+    "topicScoringWeights": 7,
+    "taskStatusConventions": 7
+  },
+  "formulaErrorPattern": "#REF!|#DIV/0!|#VALUE!|#NAME\\?|#N/A",
+  "migrationInvariants": [
+    "Existing Topic IDs, Video IDs, Source IDs, and Asset IDs are preserved exactly.",
+    "No migrated evidence record is automatically marked Safe to Use.",
+    "No migrated project-state transition is automatically confirmed.",
+    "No project asset is automatically promoted to the shared library.",
+    "Every generated identifier has a crosswalk record."
+  ]
+}
