@@ -216,3 +216,37 @@ Public Function RunPhase8SmokeTest() As String
 Failed:
     RunPhase8SmokeTest = "FAIL: Phase 8 approval smoke test did not complete at " & stage & ". " & Err.Description
 End Function
+
+Public Function RunR5SmokeTest() As String
+    Const testVideoId As String = "TEST-R5-SMOKE"
+    Dim sourceId As String, evidenceId As String, assetId As String, tagId As String
+    Dim packaging As ListObject, packageRow As ListRow
+    Dim stage As String
+    On Error GoTo Failed
+    stage = "create project"
+    If Not CreateVideoForSmokeTest(testVideoId, "R5 Smoke Test") Then GoTo Failed
+    stage = "source reuse"
+    sourceId = AddOrReuseSource("Web", "R5 Smoke Source", "https://example.test/r5")
+    If Len(sourceId) = 0 Or AddOrReuseSource("Web", "R5 Duplicate", "https://example.test/r5") <> sourceId Then GoTo Failed
+    stage = "evidence"
+    evidenceId = AddEvidenceCard(sourceId, "Verifiable Fact", "R5 smoke evidence.", "Low", "Use")
+    If Len(evidenceId) = 0 Then GoTo Failed
+    stage = "packaging"
+    If Not CreateDefaultPackagingConcepts(testVideoId) Then GoTo Failed
+    Set packaging = GetTable("PackagingConceptsTable")
+    Set packageRow = FindTableRow(packaging, 1, "PKG-" & testVideoId & "-01")
+    If packageRow Is Nothing Then GoTo Failed
+    SetColumnValue packageRow, 10, 90: SetColumnValue packageRow, 11, 80: SetColumnValue packageRow, 12, 70
+    If Not RankPackagingConcepts(testVideoId) Then GoTo Failed
+    If Not SelectPackagingConcept(CStr(packageRow.Range.Cells(1, 1).Value)) Then GoTo Failed
+    stage = "asset"
+    assetId = AddProjectAsset(testVideoId, "R5 skyline", "Video", "C:\\r5.mp4", "01-01")
+    If Len(assetId) = 0 Then GoTo Failed
+    stage = "tag"
+    tagId = AddPendingTag("R5 tag", "Topic")
+    If Len(tagId) = 0 Then GoTo Failed
+    RunR5SmokeTest = "PASS: source, evidence, packaging, asset, and tag records were created."
+    Exit Function
+Failed:
+    RunR5SmokeTest = "FAIL: R5 smoke test failed at " & stage & ". " & Err.Description
+End Function
