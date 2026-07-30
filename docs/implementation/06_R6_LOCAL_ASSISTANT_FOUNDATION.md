@@ -47,14 +47,14 @@ $env:CONTENT_ASSISTANT_TOKEN = "choose-a-random-session-token"
 python assistant/server.py
 ```
 
-Build the Windows executable in a development environment with PyInstaller installed:
+Build the Windows executable with the approved external runtime at `E:\CodexTools\pyinstaller-venv`:
 
 ```powershell
 cd assistant
 .\build_executable.ps1
 ```
 
-The bundled validation runtime used for this repository does not include PyInstaller, so R6 validates the source service and build script but does not claim a binary was produced in that runtime. Installing the build dependency or producing a signed distribution executable is a separate external-environment action.
+The generated executable is stored in `assistant\dist\ContentAssistant.exe`, which is a local project artifact rather than a repository-tracked binary.
 
 ## Safety Rules
 
@@ -74,4 +74,5 @@ R6 intentionally does not enable AI invocation, source parsing, file parsing, pr
 | `tests/assistant/test_server.py` | PASS: health, authorization, folder creation, and path-traversal rejection. |
 | `RunR5SmokeTest` in the generated R6 workbook | PASS: existing R5 records workflow was not regressed. |
 | R6 workbook generation | PASS: `working/AI_YouTube_Content_System_R6_local_assistant.xlsm` was generated from the macro-free R2 baseline and current `.bas` modules. |
-| PyInstaller executable build | NOT RUN: the bundled validation runtime has no PyInstaller module; the reproducible build script is delivered. |
+| PyInstaller executable build | PASS: PyInstaller 6.21.0 was installed in `E:\CodexTools\pyinstaller-venv`; `assistant\dist\ContentAssistant.exe` was generated. |
+| Executable health check | PASS: the generated executable returned `healthy` over loopback with a temporary session token. |
