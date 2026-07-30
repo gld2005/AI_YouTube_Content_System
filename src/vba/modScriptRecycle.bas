@@ -19,11 +19,22 @@ Public Sub InitializeRecycleArea(ByVal ws As Worksheet)
 End Sub
 
 Public Sub DeleteSelectedParagraph()
+    DeleteSelectedParagraphCore True
+End Sub
+
+Public Sub DeleteSelectedParagraphForSmokeTest()
+    DeleteSelectedParagraphCore False
+End Sub
+
+Private Sub DeleteSelectedParagraphCore(ByVal requireConfirmation As Boolean)
     Dim paragraphRow As Long
     paragraphRow = SelectedParagraphRow(ActiveSheet, ActiveCell.Row)
     If paragraphRow = 0 Then
         ShowUserError "Select a paragraph block before deleting it.", "Delete Paragraph requires a selected paragraph block."
         Exit Sub
+    End If
+    If requireConfirmation Then
+        If MsgBox("This action moves the selected paragraph to the recycle area. Continue?", vbYesNo + vbExclamation, "Delete Paragraph") <> vbYes Then Exit Sub
     End If
     StoreRecycleItem ActiveSheet, "Paragraph", paragraphRow, 3
     ActiveSheet.Rows(paragraphRow & ":" & paragraphRow + 2).Delete
@@ -31,11 +42,22 @@ Public Sub DeleteSelectedParagraph()
 End Sub
 
 Public Sub DeleteSelectedChapter()
+    DeleteSelectedChapterCore True
+End Sub
+
+Public Sub DeleteSelectedChapterForSmokeTest()
+    DeleteSelectedChapterCore False
+End Sub
+
+Private Sub DeleteSelectedChapterCore(ByVal requireConfirmation As Boolean)
     Dim chapterRow As Long, followingChapterRow As Long, rowCount As Long
     chapterRow = SelectedChapterRow(ActiveSheet, ActiveCell.Row)
     If chapterRow = 0 Then
         ShowUserError "Select a chapter block before deleting it.", "Delete Chapter requires a selected chapter block."
         Exit Sub
+    End If
+    If requireConfirmation Then
+        If MsgBox("This action moves the selected chapter to the recycle area. Continue?", vbYesNo + vbExclamation, "Delete Chapter") <> vbYes Then Exit Sub
     End If
     followingChapterRow = NextChapterRow(ActiveSheet, chapterRow)
     rowCount = followingChapterRow - chapterRow

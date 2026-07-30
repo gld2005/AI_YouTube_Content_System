@@ -39,9 +39,7 @@ Public Sub InitializeScriptWorkspace(ByVal ws As Worksheet, ByVal videoId As Str
     WriteSidebarGroup ws, 21, "Management", "Status, change reason, and last update."
     WriteSidebarGroup ws, 26, "AI Preview", "Suggestions stay pending until explicit approval."
     WriteBand ws, "I32:K32", "Script Actions", RGB(230, 221, 207)
-    ws.Range("I33").Value = "Add Chapter": ws.Range("J33").Value = "Add Paragraph": ws.Range("K33").Value = "Save Version"
-    ws.Range("I33:K33").Interior.Color = RGB(218, 229, 236)
-    ws.Range("I33:K33").Font.Bold = True
+    CreateScriptActionButtons ws
     ws.Range("A" & CONTENT_START_ROW).Value = "Use Add Chapter to begin the script outline."
     ws.Range("A" & CONTENT_START_ROW).Font.Italic = True
     ws.Range("A" & CONTENT_START_ROW).Font.Color = RGB(120, 120, 120)
@@ -171,6 +169,32 @@ Private Sub WriteSidebarGroup(ByVal ws As Worksheet, ByVal startRow As Long, ByV
     WriteBand ws, "I" & startRow & ":K" & startRow, groupName, RGB(230, 221, 207)
     ws.Range("I" & startRow & ":K" & startRow).Font.Color = RGB(73, 100, 119)
     WriteBlock ws, "I" & startRow + 1 & ":K" & startRow + 3, helperText
+End Sub
+
+Private Sub CreateScriptActionButtons(ByVal ws As Worksheet)
+    Dim buttonNames As Variant, buttonLabels As Variant, macroNames As Variant, index As Long
+    buttonNames = Array("r3AddChapter", "r3AddParagraph", "r3SaveVersion", "r3DeleteParagraph", "r3DeleteChapter", "r3RestoreRecycle")
+    buttonLabels = Array("Add Chapter", "Add Paragraph", "Save Version", "Delete Paragraph", "Delete Chapter", "Restore Item")
+    macroNames = Array("AddChapter", "AddParagraph", "SaveNewVersion", "DeleteSelectedParagraph", "DeleteSelectedChapter", "RestoreSelectedRecycleItem")
+    For index = LBound(buttonNames) To UBound(buttonNames)
+        On Error Resume Next
+        ws.Shapes(CStr(buttonNames(index))).Delete
+        On Error GoTo 0
+        AddScriptActionButton ws, CStr(buttonNames(index)), CStr(buttonLabels(index)), CStr(macroNames(index)), 33 + index, RGB(218, 229, 236)
+    Next index
+End Sub
+
+Private Sub AddScriptActionButton(ByVal ws As Worksheet, ByVal shapeName As String, ByVal labelText As String, ByVal macroName As String, ByVal targetRow As Long, ByVal fillColor As Long)
+    Dim targetCell As Range, buttonShape As Shape
+    Set targetCell = ws.Range("I" & targetRow)
+    Set buttonShape = ws.Shapes.AddShape(msoShapeRoundedRectangle, targetCell.Left, targetCell.Top, ws.Range("I" & targetRow & ":K" & targetRow).Width, 18)
+    buttonShape.Name = shapeName
+    buttonShape.OnAction = macroName
+    buttonShape.TextFrame2.TextRange.Characters.Text = labelText
+    buttonShape.TextFrame2.TextRange.Font.Size = 9
+    buttonShape.TextFrame2.TextRange.Font.Bold = msoTrue
+    buttonShape.Fill.ForeColor.RGB = fillColor
+    buttonShape.Line.ForeColor.RGB = RGB(73, 100, 119)
 End Sub
 
 Private Function NextContentRow(ByVal ws As Worksheet) As Long

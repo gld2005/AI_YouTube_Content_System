@@ -128,7 +128,7 @@ Public Function RunPhase6SmokeTest() As String
     secondRow = FindParagraphRow(scriptSheet, secondId)
     scriptSheet.Activate
     scriptSheet.Cells(secondRow, "A").Select
-    DeleteSelectedParagraph
+    DeleteSelectedParagraphForSmokeTest
     recycleId = NewestRecycleItemId(scriptSheet)
     If Len(recycleId) = 0 Then GoTo Failed
     If Not RestoreRecycleItem(scriptSheet, recycleId) Then GoTo Failed
@@ -137,7 +137,7 @@ Public Function RunPhase6SmokeTest() As String
     scriptSheet.Activate
     scriptSheet.Cells(14, "A").Select
     stage = "chapter delete"
-    DeleteSelectedChapter
+    DeleteSelectedChapterForSmokeTest
     recycleId = NewestRecycleItemId(scriptSheet)
     If Len(recycleId) = 0 Then GoTo Failed
     stage = "chapter restore"

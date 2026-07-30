@@ -14,8 +14,9 @@ End Sub
 
 Public Function SaveVersionForVideo(ByVal videoId As String, ByVal reason As String) As Boolean
     Dim projects As ListObject, projectRow As ListRow
-    Dim currentSheet As Worksheet, previousSheet As Worksheet
+    Dim currentSheet As Worksheet, previousSheet As Worksheet, replacementSheet As Worksheet
     Dim operation As String
+    Dim previousSheetName As String, temporarySheetName As String
     On Error GoTo Failed
     LastVersionError = ""
     operation = "locate project table"
@@ -26,15 +27,21 @@ Public Function SaveVersionForVideo(ByVal videoId As String, ByVal reason As Str
     Set currentSheet = ThisWorkbook.Worksheets(CStr(projectRow.Range.Cells(1, 28).Value))
     operation = "locate previous script"
     Set previousSheet = ThisWorkbook.Worksheets(CStr(projectRow.Range.Cells(1, 29).Value))
+    previousSheetName = previousSheet.Name
     operation = "compare paragraphs"
     MarkChangedParagraphs currentSheet, previousSheet
-    operation = "delete previous script"
+    operation = "copy current script to replacement"
+    currentSheet.Copy After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
+    Set replacementSheet = ActiveSheet
+    temporarySheetName = SafeSheetName("TMP-" & Format$(Now, "yymmddhhnnss"))
+    replacementSheet.Name = temporarySheetName
+    operation = "rename existing previous script"
+    previousSheet.Name = SafeSheetName("OLD-" & Format$(Now, "yymmddhhnnss"))
+    operation = "publish replacement script"
+    replacementSheet.Name = previousSheetName
+    operation = "remove replaced previous script"
     Application.DisplayAlerts = False
     previousSheet.Delete
-    operation = "copy current script"
-    currentSheet.Copy After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
-    operation = "name copied script"
-    ActiveSheet.Name = CStr(projectRow.Range.Cells(1, 29).Value)
     Application.DisplayAlerts = True
     SetColumnValue projectRow, 31, Date
     Debug.Print Format$(Now, "yyyy-mm-dd hh:nn") & " | Version saved for " & videoId & " | " & reason
