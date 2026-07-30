@@ -148,3 +148,35 @@ Public Function RunPhase6SmokeTest() As String
 Failed:
     RunPhase6SmokeTest = "FAIL: Phase 6 version and recycle smoke test did not complete at " & stage & ". " & Err.Description
 End Function
+
+Public Function RunPhase7SmokeTest() As String
+    Const testVideoId As String = "TEST-PHASE7-001"
+    Const testTitle As String = "Phase 7 Relationship Smoke Test"
+    Dim sources As ListObject, evidence As ListObject, sourceRow As ListRow, evidenceRow As ListRow
+    Dim projects As ListObject, projectRow As ListRow, scriptSheet As Worksheet
+    Dim paragraphId As String, paragraphRow As Long, chapterId As String
+
+    On Error GoTo Failed
+    If Not CreateVideoForSmokeTest(testVideoId, testTitle) Then GoTo Failed
+    Set sources = GetTable(SOURCE_TABLE_NAME)
+    Set sourceRow = sources.ListRows.Add
+    SetColumnValue sourceRow, 1, "SRC-PHASE7-001": SetColumnValue sourceRow, 3, "Smoke Test Source"
+    Set evidence = GetTable(EVIDENCE_TABLE_NAME)
+    Set evidenceRow = evidence.ListRows.Add
+    SetColumnValue evidenceRow, 1, "EVD-PHASE7-001": SetColumnValue evidenceRow, 2, "SRC-PHASE7-001"
+    SetColumnValue evidenceRow, 3, "Verifiable Fact": SetColumnValue evidenceRow, 4, "Smoke test evidence."
+    Set projects = GetTable(PROJECT_TABLE_NAME)
+    Set projectRow = FindTableRow(projects, 1, testVideoId)
+    Set scriptSheet = ThisWorkbook.Worksheets(CStr(projectRow.Range.Cells(1, 28).Value))
+    AddChapterByValues scriptSheet, "Phase 7 Smoke Test Chapter"
+    paragraphId = AddParagraphByValues(scriptSheet, "Linked narration.", "Linked production note.", "Drafting", "00:15")
+    paragraphRow = FindParagraphRow(scriptSheet, paragraphId)
+    chapterId = "CH-01"
+    If Not AddResearchLink(testVideoId, "EVD-PHASE7-001", chapterId, paragraphId, "Script evidence") Then GoTo Failed
+    If Not AddPackagingConcept(testVideoId, "Smoke Test Title", "Smoke Thumbnail") Then GoTo Failed
+    If Not AddProjectAssetLink(testVideoId, chapterId, paragraphId, "Smoke Visual Asset") Then GoTo Failed
+    RunPhase7SmokeTest = "PASS: source, evidence, packaging, asset, and paragraph links were created."
+    Exit Function
+Failed:
+    RunPhase7SmokeTest = "FAIL: Phase 7 relationship smoke test did not complete. " & Err.Description
+End Function
