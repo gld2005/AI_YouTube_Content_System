@@ -1,0 +1,23 @@
+{
+  "package_name": "AI YouTube Content System Codex Starter",
+  "documentation_language": "English",
+  "workbook_ui_language": "Simplified Chinese",
+  "primary_target": "Windows desktop Excel with VBA",
+  "scope_policy": "Confirmed scope may be phased but not silently reduced",
+  "entrypoint": "CODEX_INITIAL_PROMPT.md",
+  "reference_workbook": "reference/AI_YouTube_Content_Pipeline_Baseline.xlsx",
+  "files": [
+    "AGENTS.md",
+    "CODEX_INITIAL_PROMPT.md",
+    "README.md",
+    "docs/01_PRODUCT_SPECIFICATION.md",
+    "docs/02_UX_VISUAL_SPECIFICATION.md",
+    "docs/03_WORKBOOK_DATA_MODEL.md",
+    "docs/04_AUTOMATION_AI_LOCAL_ASSISTANT.md",
+    "docs/05_ACCEPTANCE_CRITERIA.md",
+    "docs/06_DECISIONS_REGISTER.md",
+    "docs/07_REQUIREMENTS_TRACEABILITY.md",
+    "reference/AI_YouTube_Content_Pipeline_Baseline.xlsx",
+    "reference/BASELINE_NOTES.md"
+  ]
+}

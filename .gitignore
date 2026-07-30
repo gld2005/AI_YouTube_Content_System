@@ -1,0 +1,36 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# Local Python and build artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+*.spec
+
+# Local assistant logs, sessions, and generated outputs
+logs/
+outputs/
+tmp/
+.cache/
+*.log
+
+# User-specific workbook copies and project data
+working/
+backups/
+project-data/
+*.xlsm~
+~$*.xls*
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
