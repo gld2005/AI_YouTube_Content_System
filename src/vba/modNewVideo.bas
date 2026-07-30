@@ -37,6 +37,8 @@ Public Function CreateVideoForSmokeTest(ByVal videoId As String, ByVal videoTitl
     ActiveSheet.Name = currentSheetName
     Sheet9.Copy After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
     ActiveSheet.Name = previousSheetName
+    InitializeScriptWorkspace ThisWorkbook.Worksheets(currentSheetName), videoId, videoTitle
+    ThisWorkbook.Worksheets(previousSheetName).Range("A1").Value = "Previous Script | No saved version yet"
     Set scriptIndex = GetTable(SCRIPT_INDEX_TABLE_NAME)
     Set scriptRow = scriptIndex.ListRows.Add
     SetColumnValue scriptRow, 1, videoId: SetColumnValue scriptRow, 2, videoTitle
