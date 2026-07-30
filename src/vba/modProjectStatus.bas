@@ -39,7 +39,7 @@ Failed:
 End Function
 
 Public Sub SuggestSelectedProjectStage()
-    Dim projectRow As ListRow, projects As ListObject, videoId As String, suggestedStage As String
+    Dim projectRow As ListRow, projects As ListObject, videoId As String, suggestedStageText As String
     Set projects = GetTable(PROJECT_TABLE_NAME)
     Set projectRow = FindTableRow(projects, 1, CStr(ActiveCell.Value))
     If projectRow Is Nothing Then
@@ -51,8 +51,8 @@ Public Sub SuggestSelectedProjectStage()
         ShowUserError "Project progress could not be refreshed.", "Project progress refresh failed for " & videoId
         Exit Sub
     End If
-    suggestedStage = SuggestedStage(CDbl(projectRow.Range.Cells(1, PROJECT_TOTAL_PROGRESS_COLUMN).Value), CStr(projectRow.Range.Cells(1, PROJECT_RISK_COLUMN).Value))
-    MsgBox "Suggested working stage: " & suggestedStage & vbCrLf & "No project status or stage has been changed. Confirm any transition manually.", vbInformation, "Project Stage Suggestion"
+    suggestedStageText = SuggestedStage(videoId, CDbl(projectRow.Range.Cells(1, PROJECT_TOTAL_PROGRESS_COLUMN).Value), CStr(projectRow.Range.Cells(1, PROJECT_RISK_COLUMN).Value))
+    MsgBox "Suggested working stage: " & suggestedStageText & vbCrLf & "No project status or stage has been changed. Confirm any transition manually.", vbInformation, "Project Stage Suggestion"
 End Sub
 
 Private Function CalculateStructureProgress(ByVal ws As Worksheet) As Double
@@ -68,13 +68,13 @@ Private Function CalculateStructureProgress(ByVal ws As Worksheet) As Double
 End Function
 
 Private Function CalculateWritingProgress(ByVal ws As Worksheet) As Double
-    Dim rowIndex As Long, totalWeight As Double, completeWeight As Double, durationWeight As Double, statusValue As String
+    Dim rowIndex As Long, totalWeight As Double, completeWeight As Double, durationSeconds As Double, statusValue As String
     For rowIndex = 12 To ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
         If Len(CStr(ws.Cells(rowIndex, "A").Value)) = 5 And Mid$(CStr(ws.Cells(rowIndex, "A").Value), 3, 1) = "-" Then
-            durationWeight = DurationWeight(CStr(ws.Cells(rowIndex, "D").Value))
-            totalWeight = totalWeight + durationWeight
+            durationSeconds = DurationWeight(CStr(ws.Cells(rowIndex, "D").Value))
+            totalWeight = totalWeight + durationSeconds
             statusValue = CStr(ws.Cells(rowIndex, "C").Value)
-            completeWeight = completeWeight + (durationWeight * WritingStatusWeight(statusValue))
+            completeWeight = completeWeight + (durationSeconds * WritingStatusWeight(statusValue))
         End If
     Next rowIndex
     If totalWeight > 0 Then CalculateWritingProgress = Round((completeWeight / totalWeight) * 100, 0)
@@ -132,7 +132,71 @@ Private Function ProjectRisk(ByVal targetDate As Variant, ByVal progressValue As
     End If
 End Function
 
-Private Function SuggestedStage(ByVal totalProgress As Double, ByVal riskValue As String) As String
-    If LCase$(riskValue) = "blocked" Then SuggestedStage = "No change: blocked": Exit Function
-    If totalProgress >= 100 Then SuggestedStage = "Optimize" ElseIf totalProgress >= 90 Then SuggestedStage = "Publish" ElseIf totalProgress >= 85 Then SuggestedStage = "Post" ElseIf totalProgress >= 60 Then SuggestedStage = "Edit" Else SuggestedStage = "Script"
+Public Function RefreshProjectStageTimeline(ByVal videoId As String) As Boolean
+    Dim projects As ListObject, projectRow As ListRow, workspace As Worksheet, stageNames As Variant, index As Long, suggestedStageText As String
+    On Error GoTo Failed
+    Set projects = GetTable(PROJECT_TABLE_NAME)
+    Set projectRow = FindTableRow(projects, 1, videoId)
+    If projectRow Is Nothing Then GoTo Failed
+    If Not RefreshProjectProgress(videoId) Then GoTo Failed
+    suggestedStageText = SuggestedStage(videoId, CDbl(projectRow.Range.Cells(1, PROJECT_TOTAL_PROGRESS_COLUMN).Value), CStr(projectRow.Range.Cells(1, PROJECT_RISK_COLUMN).Value))
+    Set workspace = ThisWorkbook.Worksheets(3)
+    stageNames = Array("Research", "Script", "Assets", "Recording", "Edit", "Motion", "Post", "Publish", "Optimize")
+    workspace.Range("A28:I30").Clear
+    workspace.Range("A28:I28").Merge
+    workspace.Range("A28").Value = "Project Stage Timeline | " & videoId & " | Suggested: " & suggestedStageText
+    workspace.Range("A28").Font.Bold = True
+    workspace.Range("A28").Interior.Color = RGB(73, 100, 119)
+    workspace.Range("A28").Font.Color = RGB(255, 255, 255)
+    For index = LBound(stageNames) To UBound(stageNames)
+        workspace.Cells(29, index + 1).Value = stageNames(index)
+        workspace.Cells(29, index + 1).HorizontalAlignment = xlCenter
+        workspace.Cells(29, index + 1).Font.Bold = True
+        workspace.Cells(29, index + 1).Interior.Color = RGB(230, 221, 207)
+        If StrComp(CStr(stageNames(index)), suggestedStageText, vbTextCompare) = 0 Then workspace.Cells(29, index + 1).Interior.Color = RGB(172, 117, 94)
+    Next index
+    RefreshProjectStageTimeline = True
+    Exit Function
+Failed:
+    RefreshProjectStageTimeline = False
 End Function
+
+Private Function SuggestedStage(ByVal videoId As String, ByVal totalProgress As Double, ByVal riskValue As String) As String
+    Dim editThreshold As Double, postThreshold As Double, publishThreshold As Double, optimizeThreshold As Double
+    LoadTransitionThresholds videoId, editThreshold, postThreshold, publishThreshold, optimizeThreshold
+    If LCase$(riskValue) = "blocked" Then SuggestedStage = "No change: blocked": Exit Function
+    If totalProgress >= optimizeThreshold Then
+        SuggestedStage = "Optimize"
+    ElseIf totalProgress >= publishThreshold Then
+        SuggestedStage = "Publish"
+    ElseIf totalProgress >= postThreshold Then
+        SuggestedStage = "Post"
+    ElseIf totalProgress >= editThreshold Then
+        SuggestedStage = "Edit"
+    Else
+        SuggestedStage = "Script"
+    End If
+End Function
+
+Private Sub LoadTransitionThresholds(ByVal videoId As String, ByRef editThreshold As Double, ByRef postThreshold As Double, ByRef publishThreshold As Double, ByRef optimizeThreshold As Double)
+    Dim projects As ListObject, projectRow As ListRow, seriesTable As ListObject, seriesRow As ListRow, thresholdParts As Variant
+    editThreshold = 60#
+    postThreshold = 85#
+    publishThreshold = 90#
+    optimizeThreshold = 100#
+    On Error GoTo UseDefaults
+    Set projects = GetTable(PROJECT_TABLE_NAME)
+    Set projectRow = FindTableRow(projects, 1, videoId)
+    If projectRow Is Nothing Then GoTo UseDefaults
+    Set seriesTable = GetTable("SeriesTable")
+    Set seriesRow = FindTableRow(seriesTable, 1, CStr(projectRow.Range.Cells(1, 4).Value))
+    If seriesRow Is Nothing Then GoTo UseDefaults
+    thresholdParts = Split(Replace(CStr(seriesRow.Range.Cells(1, 14).Value), "%", ""), "/")
+    If UBound(thresholdParts) <> 3 Then GoTo UseDefaults
+    If Not IsNumeric(Trim$(thresholdParts(0))) Or Not IsNumeric(Trim$(thresholdParts(1))) Or Not IsNumeric(Trim$(thresholdParts(2))) Or Not IsNumeric(Trim$(thresholdParts(3))) Then GoTo UseDefaults
+    editThreshold = CDbl(Trim$(thresholdParts(0)))
+    postThreshold = CDbl(Trim$(thresholdParts(1)))
+    publishThreshold = CDbl(Trim$(thresholdParts(2)))
+    optimizeThreshold = CDbl(Trim$(thresholdParts(3)))
+UseDefaults:
+End Sub
