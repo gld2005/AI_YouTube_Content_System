@@ -14,6 +14,8 @@ Public Sub InitializeScriptWorkspace(ByVal ws As Worksheet, ByVal videoId As Str
     ws.Columns("B:G").ColumnWidth = 13
     ws.Columns("H").ColumnWidth = 3
     ws.Columns("I:K").ColumnWidth = 15
+    ws.Columns("I:K").Columns.Group
+    ws.Outline.SummaryColumn = xlRight
     With ws.Range("A1:K1")
         .Merge
         .Value = "Script Workspace | " & videoId & " | " & videoTitle
@@ -30,19 +32,21 @@ Public Sub InitializeScriptWorkspace(ByVal ws As Worksheet, ByVal videoId As Str
     WriteSummary ws, "I3", "Current Stage", "Planning"
     WriteSummary ws, "I5", "Version", "V1"
     WriteBand ws, "A9:G9", "STORY FLOW AND CHAPTER OUTLINE", RGB(102, 132, 154)
+    WriteStoryFlow ws
     WriteBand ws, "I9:K9", "PRODUCTION SIDEBAR", RGB(172, 117, 94)
-    WriteBand ws, "I11:K11", "Visual Direction", RGB(230, 221, 207)
-    WriteBlock ws, "I12:K15", "Add reference images, thumbnail direction, style constraints, and production notes here."
-    WriteBand ws, "I17:K17", "AI Suggestion Preview", RGB(230, 221, 207)
-    WriteBlock ws, "I18:K22", "Suggestions remain pending until explicitly approved."
-    WriteBand ws, "I24:K24", "Script Actions", RGB(230, 221, 207)
-    ws.Range("I25").Value = "Add Chapter": ws.Range("J25").Value = "Add Paragraph": ws.Range("K25").Value = "Save Version"
-    ws.Range("I25:K25").Interior.Color = RGB(218, 229, 236)
-    ws.Range("I25:K25").Font.Bold = True
+    WriteSidebarGroup ws, 11, "Content", "Visual idea, Source IDs, and asset requirements."
+    WriteSidebarGroup ws, 16, "Editing", "Subtitle emphasis, music, animation, and timecodes."
+    WriteSidebarGroup ws, 21, "Management", "Status, change reason, and last update."
+    WriteSidebarGroup ws, 26, "AI Preview", "Suggestions stay pending until explicit approval."
+    WriteBand ws, "I32:K32", "Script Actions", RGB(230, 221, 207)
+    ws.Range("I33").Value = "Add Chapter": ws.Range("J33").Value = "Add Paragraph": ws.Range("K33").Value = "Save Version"
+    ws.Range("I33:K33").Interior.Color = RGB(218, 229, 236)
+    ws.Range("I33:K33").Font.Bold = True
     ws.Range("A" & CONTENT_START_ROW).Value = "Use Add Chapter to begin the script outline."
     ws.Range("A" & CONTENT_START_ROW).Font.Italic = True
     ws.Range("A" & CONTENT_START_ROW).Font.Color = RGB(120, 120, 120)
     ws.Range("A:K").VerticalAlignment = xlTop
+    ws.Outline.ShowLevels ColumnLevels:=2
     Application.ScreenUpdating = True
 End Sub
 
@@ -81,31 +85,35 @@ Public Sub AddParagraph()
         ShowUserError "Select an existing paragraph before adding a new paragraph.", "Add Paragraph requires a selected paragraph block."
         Exit Sub
     End If
-    AddParagraphAtRow ActiveSheet, paragraphRow, narration, "", "Draft", "00:00"
+    AddParagraphAtRow ActiveSheet, paragraphRow, narration, "", PromptParagraphStatus(), "00:00", PromptParagraphType()
 End Sub
 
 Public Function AddParagraphByValues(ByVal ws As Worksheet, ByVal narration As String, ByVal productionNotes As String, ByVal paragraphStatus As String, ByVal estimatedDuration As String) As String
     Dim paragraphRow As Long
     paragraphRow = NextContentRow(ws)
     If paragraphRow < CONTENT_START_ROW Then paragraphRow = CONTENT_START_ROW
-    AddParagraphByValues = AddParagraphAtRow(ws, paragraphRow, narration, productionNotes, paragraphStatus, estimatedDuration)
+    AddParagraphByValues = AddParagraphAtRow(ws, paragraphRow, narration, productionNotes, paragraphStatus, estimatedDuration, "Narration")
 End Function
 
-Private Function AddParagraphAtRow(ByVal ws As Worksheet, ByVal paragraphRow As Long, ByVal narration As String, ByVal productionNotes As String, ByVal paragraphStatus As String, ByVal estimatedDuration As String) As String
+Private Function AddParagraphAtRow(ByVal ws As Worksheet, ByVal paragraphRow As Long, ByVal narration As String, ByVal productionNotes As String, ByVal paragraphStatus As String, ByVal estimatedDuration As String, ByVal paragraphType As String) As String
     Dim chapterNumber As Long, paragraphNumber As Long, paragraphId As String
     chapterNumber = CurrentChapterNumber(ws, paragraphRow)
     If chapterNumber = 0 Then chapterNumber = 1
     paragraphNumber = CountPrefix(ws, Format$(chapterNumber, "00") & "-") + 1
     paragraphId = Format$(chapterNumber, "00") & "-" & Format$(paragraphNumber, "00")
     ws.Rows(paragraphRow & ":" & paragraphRow + 2).Insert Shift:=xlDown
-    ws.Range("A" & paragraphRow).Value = paragraphId
-    ws.Range("A" & paragraphRow).Font.Size = 8
-    ws.Range("A" & paragraphRow).Font.Color = RGB(135, 135, 135)
-    ws.Range("B" & paragraphRow).Value = "Paragraph"
+    With ws.Range("A" & paragraphRow)
+        .NumberFormat = "@"
+        .Value = paragraphId
+        .Font.Size = 8
+        .Font.Color = RGB(135, 135, 135)
+    End With
+    ws.Range("B" & paragraphRow).Value = paragraphType
     ws.Range("C" & paragraphRow).Value = paragraphStatus
     ws.Range("D" & paragraphRow).Value = estimatedDuration
     ws.Range("B" & paragraphRow & ":D" & paragraphRow).Interior.Color = RGB(235, 231, 219)
     ws.Range("B" & paragraphRow & ":D" & paragraphRow).Font.Bold = True
+    ApplyParagraphPresentation ws, paragraphRow, paragraphType, paragraphStatus
     WriteBlock ws, "B" & paragraphRow + 1 & ":G" & paragraphRow + 1, narration
     WriteBlock ws, "B" & paragraphRow + 2 & ":G" & paragraphRow + 2, productionNotes
     ws.Range("A" & paragraphRow & ":G" & paragraphRow + 2).Borders(xlEdgeLeft).Color = RGB(143, 170, 185)
@@ -146,6 +154,24 @@ Private Sub WriteChapterField(ByVal ws As Worksheet, ByVal targetRow As Long, By
     WriteBlock ws, "B" & targetRow & ":G" & targetRow, valueText
 End Sub
 
+Private Sub WriteStoryFlow(ByVal ws As Worksheet)
+    ws.Range("A10").Value = "Hook"
+    ws.Range("B10").Value = "Context"
+    ws.Range("C10").Value = "Tension"
+    ws.Range("D10").Value = "Proof"
+    ws.Range("E10").Value = "Turning Point"
+    ws.Range("F10").Value = "Resolution"
+    ws.Range("A10:F10").Interior.Color = RGB(232, 239, 243)
+    ws.Range("A10:F10").Font.Bold = True
+    ws.Range("A10:F10").HorizontalAlignment = xlCenter
+End Sub
+
+Private Sub WriteSidebarGroup(ByVal ws As Worksheet, ByVal startRow As Long, ByVal groupName As String, ByVal helperText As String)
+    WriteBand ws, "I" & startRow & ":K" & startRow, groupName, RGB(230, 221, 207)
+    ws.Range("I" & startRow & ":K" & startRow).Font.Color = RGB(73, 100, 119)
+    WriteBlock ws, "I" & startRow + 1 & ":K" & startRow + 3, helperText
+End Sub
+
 Private Function NextContentRow(ByVal ws As Worksheet) As Long
     Dim lastCell As Range
     Set lastCell = ws.Range("A:G").Find(What:="*", After:=ws.Range("A1"), LookIn:=xlFormulas, SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
@@ -172,13 +198,7 @@ Private Function CurrentChapterNumber(ByVal ws As Worksheet, ByVal targetRow As 
 End Function
 
 Private Function SelectedParagraphInsertRow(ByVal ws As Worksheet, ByVal selectedRow As Long) As Long
-    Dim scanRow As Long
-    Dim paragraphId As String
-    For scanRow = selectedRow To CONTENT_START_ROW Step -1
-        paragraphId = CStr(ws.Cells(scanRow, "A").Value)
-        If Len(paragraphId) = 5 And Mid$(paragraphId, 3, 1) = "-" Then
-            SelectedParagraphInsertRow = scanRow + 3
-            Exit Function
-        End If
-    Next scanRow
+    Dim paragraphRow As Long
+    paragraphRow = SelectedParagraphRow(ws, selectedRow)
+    If paragraphRow > 0 Then SelectedParagraphInsertRow = paragraphRow + 3
 End Function
