@@ -12,10 +12,10 @@ Public Function RunPhase3SmokeTest() As String
     On Error GoTo Failed
     If Not CreateVideoForSmokeTest(testVideoId, testTitle) Then GoTo Failed
     Set projects = GetTable(PROJECT_TABLE_NAME)
-    Set projectRow = FindTableRow(projects, "Video ID", testVideoId)
+    Set projectRow = FindTableRow(projects, 1, testVideoId)
     If projectRow Is Nothing Then GoTo Failed
-    currentSheetName = CStr(projectRow.Range.Cells(1, TableColumnIndex(projects, "当前脚本页")).Value)
-    previousSheetName = CStr(projectRow.Range.Cells(1, TableColumnIndex(projects, "上一版脚本页")).Value)
+    currentSheetName = CStr(projectRow.Range.Cells(1, 28).Value)
+    previousSheetName = CStr(projectRow.Range.Cells(1, 29).Value)
     If Not SheetExists(currentSheetName) Or Not SheetExists(previousSheetName) Then GoTo Failed
     RunPhase3SmokeTest = "PASS: project record, script index, and paired script pages created."
     Exit Function

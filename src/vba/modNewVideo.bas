@@ -4,117 +4,45 @@ Option Explicit
 Public Sub NewVideoScript()
     Dim videoId As String
     Dim videoTitle As String
-    Dim projects As ListObject
-    Dim scriptIndex As ListObject
-    Dim projectRow As ListRow
-    Dim scriptRow As ListRow
-    Dim existingProject As ListRow
-    Dim currentSheetName As String
-    Dim previousSheetName As String
-
-    videoId = Trim$(InputBox("请输入 Video ID，例如 YT-002：", "新建视频脚本"))
+    videoId = Trim$(InputBox("Enter a Video ID, for example YT-002:", "New Video Script"))
     If Len(videoId) = 0 Then Exit Sub
-    videoTitle = Trim$(InputBox("请输入视频标题：", "新建视频脚本"))
-    If Len(videoTitle) = 0 Then
-        ShowUserError "视频标题不能为空。", "New video creation was cancelled because the title was empty."
+    videoTitle = Trim$(InputBox("Enter the video title:", "New Video Script"))
+    If Not CreateVideoForSmokeTest(videoId, videoTitle) Then
+        ShowUserError "The Video ID already exists or the script pages could not be created.", "New video creation failed for " & videoId
         Exit Sub
     End If
-
-    Set projects = GetTable(PROJECT_TABLE_NAME)
-    Set projectRow = FindTableRow(projects, "Video ID", videoId)
-    If Not projectRow Is Nothing Then
-        ShowUserError "该 Video ID 已存在，未创建重复项目。", "Duplicate Video ID: " & videoId
-        Exit Sub
-    End If
-
-    currentSheetName = SafeSheetName(videoId & "｜脚本")
-    previousSheetName = SafeSheetName(videoId & "｜上一版")
-    If SheetExists(currentSheetName) Or SheetExists(previousSheetName) Then
-        ShowUserError "脚本页名称已存在，请使用其他 Video ID。", "Duplicate script sheet name for Video ID: " & videoId
-        Exit Sub
-    End If
-
-    Set projectRow = projects.ListRows.Add
-    SetRowValue projectRow, projects, "Video ID", videoId
-    SetRowValue projectRow, projects, "视频标题", videoTitle
-    SetRowValue projectRow, projects, "Series ID", "SER-UNCLASSIFIED"
-    SetRowValue projectRow, projects, "项目状态", "策划中"
-    SetRowValue projectRow, projects, "脚本状态", "未开始"
-    SetRowValue projectRow, projects, "优先级", "P1"
-    SetRowValue projectRow, projects, "开始日期", Date
-    SetRowValue projectRow, projects, "最后更新", Date
-    SetRowValue projectRow, projects, "当前脚本页", currentSheetName
-    SetRowValue projectRow, projects, "上一版脚本页", previousSheetName
-    SetRowValue projectRow, projects, "当前版本", "V1"
-    SetRowValue projectRow, projects, "主项目", "否"
-
-    CreateScriptSheets currentSheetName, previousSheetName
-
-    Set scriptIndex = GetTable(SCRIPT_INDEX_TABLE_NAME)
-    Set scriptRow = scriptIndex.ListRows.Add
-    SetRowValue scriptRow, scriptIndex, "Video ID", videoId
-    SetRowValue scriptRow, scriptIndex, "视频标题", videoTitle
-    SetRowValue scriptRow, scriptIndex, "Series ID", "SER-UNCLASSIFIED"
-    SetRowValue scriptRow, scriptIndex, "当前脚本页", currentSheetName
-    SetRowValue scriptRow, scriptIndex, "上一版脚本页", previousSheetName
-    SetRowValue scriptRow, scriptIndex, "当前版本", "V1"
-    SetRowValue scriptRow, scriptIndex, "脚本状态", "未开始"
-    SetRowValue scriptRow, scriptIndex, "最后更新", Date
-
-    ThisWorkbook.Worksheets(currentSheetName).Activate
-    MsgBox "已创建新视频项目和脚本页。请确认系列与继承选项后继续。", vbInformation, "新建视频脚本"
-End Sub
-
-Private Sub CreateScriptSheets(ByVal currentSheetName As String, ByVal previousSheetName As String)
-    Dim templateSheet As Worksheet
-    Set templateSheet = ThisWorkbook.Worksheets("脚本模板")
-    templateSheet.Copy After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
-    ActiveSheet.Name = currentSheetName
-    templateSheet.Copy After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
-    ActiveSheet.Name = previousSheetName
-    ActiveSheet.Range("A1").Value = "脚本上一版｜待首次保存版本"
+    ThisWorkbook.Worksheets(SafeSheetName(videoId & " - Script")).Activate
+    MsgBox "The project and paired script sheets were created.", vbInformation, "New Video Script"
 End Sub
 
 Public Function CreateVideoForSmokeTest(ByVal videoId As String, ByVal videoTitle As String) As Boolean
-    Dim projects As ListObject
-    Dim scriptIndex As ListObject
-    Dim projectRow As ListRow
-    Dim scriptRow As ListRow
-    Dim currentSheetName As String
-    Dim previousSheetName As String
-
+    Dim projects As ListObject, scriptIndex As ListObject
+    Dim projectRow As ListRow, scriptRow As ListRow, existingProject As ListRow
+    Dim currentSheetName As String, previousSheetName As String
     On Error GoTo Failed
     Set projects = GetTable(PROJECT_TABLE_NAME)
-    Set existingProject = FindTableRow(projects, "Video ID", videoId)
+    Set existingProject = FindTableRow(projects, 1, videoId)
     If Not existingProject Is Nothing Then GoTo Failed
-    currentSheetName = SafeSheetName(videoId & "｜脚本")
-    previousSheetName = SafeSheetName(videoId & "｜上一版")
+    currentSheetName = SafeSheetName(videoId & " - Script")
+    previousSheetName = SafeSheetName(videoId & " - Previous")
     If SheetExists(currentSheetName) Or SheetExists(previousSheetName) Then GoTo Failed
-
     Set projectRow = projects.ListRows.Add
-    SetRowValue projectRow, projects, "Video ID", videoId
-    SetRowValue projectRow, projects, "视频标题", videoTitle
-    SetRowValue projectRow, projects, "Series ID", "SER-UNCLASSIFIED"
-    SetRowValue projectRow, projects, "项目状态", "策划中"
-    SetRowValue projectRow, projects, "脚本状态", "未开始"
-    SetRowValue projectRow, projects, "优先级", "P1"
-    SetRowValue projectRow, projects, "开始日期", Date
-    SetRowValue projectRow, projects, "最后更新", Date
-    SetRowValue projectRow, projects, "当前脚本页", currentSheetName
-    SetRowValue projectRow, projects, "上一版脚本页", previousSheetName
-    SetRowValue projectRow, projects, "当前版本", "V1"
-    SetRowValue projectRow, projects, "主项目", "否"
-    CreateScriptSheets currentSheetName, previousSheetName
-
+    SetColumnValue projectRow, 1, videoId: SetColumnValue projectRow, 2, videoTitle
+    SetColumnValue projectRow, 4, "SER-UNCLASSIFIED": SetColumnValue projectRow, 11, "Planning"
+    SetColumnValue projectRow, 13, "Not Started": SetColumnValue projectRow, 14, "P1"
+    SetColumnValue projectRow, 16, Date: SetColumnValue projectRow, 28, currentSheetName
+    SetColumnValue projectRow, 29, previousSheetName: SetColumnValue projectRow, 30, "V1"
+    SetColumnValue projectRow, 31, Date: SetColumnValue projectRow, 32, "No"
+    Sheet9.Copy After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
+    ActiveSheet.Name = currentSheetName
+    Sheet9.Copy After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count)
+    ActiveSheet.Name = previousSheetName
     Set scriptIndex = GetTable(SCRIPT_INDEX_TABLE_NAME)
     Set scriptRow = scriptIndex.ListRows.Add
-    SetRowValue scriptRow, scriptIndex, "Video ID", videoId
-    SetRowValue scriptRow, scriptIndex, "视频标题", videoTitle
-    SetRowValue scriptRow, scriptIndex, "当前脚本页", currentSheetName
-    SetRowValue scriptRow, scriptIndex, "上一版脚本页", previousSheetName
-    SetRowValue scriptRow, scriptIndex, "当前版本", "V1"
-    SetRowValue scriptRow, scriptIndex, "脚本状态", "未开始"
-    SetRowValue scriptRow, scriptIndex, "最后更新", Date
+    SetColumnValue scriptRow, 1, videoId: SetColumnValue scriptRow, 2, videoTitle
+    SetColumnValue scriptRow, 3, "SER-UNCLASSIFIED": SetColumnValue scriptRow, 4, currentSheetName
+    SetColumnValue scriptRow, 5, previousSheetName: SetColumnValue scriptRow, 6, "V1"
+    SetColumnValue scriptRow, 7, "Not Started": SetColumnValue scriptRow, 10, Date
     CreateVideoForSmokeTest = True
     Exit Function
 Failed:
