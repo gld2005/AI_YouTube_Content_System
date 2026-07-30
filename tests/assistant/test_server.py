@@ -76,3 +76,18 @@ class ServerTests(unittest.TestCase):
         status, body = self.request("POST", "/v1/ai/invoke", {"payload": {"provider_id": "openai", "prompt_id": "polish_paragraph", "inputs": {"paragraph": "Original text."}}})
         self.assertEqual(status, 400)
         self.assertEqual(body["error"]["code"], "missing_prompt_input")
+
+    def test_local_transcript_parsing(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            transcript = Path(temporary_directory) / "clip.vtt"
+            transcript.write_text("WEBVTT\n\n00:00.000 --> 00:01.000\nHello", encoding="utf-8")
+            status, body = self.request("POST", "/v1/files/parse", {"payload": {"path": str(transcript)}})
+            self.assertEqual(status, 200)
+            self.assertEqual(body["status"], "parsed")
+            self.assertEqual(body["data"]["source_type"], "Transcript")
+
+    def test_blocked_platform_has_manual_recovery(self):
+        status, body = self.request("POST", "/v1/sources/parse", {"payload": {"url": "https://www.reddit.com/r/example"}})
+        self.assertEqual(status, 400)
+        self.assertEqual(body["error"]["code"], "semi_automatic_source")
+        self.assertIn("Paste source text", body["error"]["recovery_actions"])

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from ai_contract import AiContractError, invoke as invoke_ai
+from research_parser import ParseError, parse_file, parse_url
 
 VERSION = "0.1.0"
 DEFAULT_HOST = "127.0.0.1"
@@ -77,9 +78,9 @@ class AssistantHandler(BaseHTTPRequestHandler):
         if self.path == "/v1/capabilities":
             self.send_json(HTTPStatus.OK, self.response(str(uuid.uuid4()), "ok", {
                 "providers": [],
-                "parsers": [],
-                "actions": ["folders.create", "ai.invoke"],
-                "endpoints": ["/v1/health", "/v1/capabilities", "/v1/ai/invoke", "/v1/folders/create", "/v1/operations/{id}/cancel"],
+                "parsers": ["web", "youtube", "local_text", "transcript"],
+                "actions": ["folders.create", "ai.invoke", "sources.parse", "files.parse"],
+                "endpoints": ["/v1/health", "/v1/capabilities", "/v1/ai/invoke", "/v1/sources/parse", "/v1/files/parse", "/v1/folders/create", "/v1/operations/{id}/cancel"],
                 "cloud_compatible": True,
             }))
             return
@@ -99,6 +100,12 @@ class AssistantHandler(BaseHTTPRequestHandler):
         if self.path == "/v1/ai/invoke":
             self.invoke_ai(request_id, payload)
             return
+        if self.path == "/v1/sources/parse":
+            self.parse_research(request_id, payload, False)
+            return
+        if self.path == "/v1/files/parse":
+            self.parse_research(request_id, payload, True)
+            return
         if self.path.startswith("/v1/operations/") and self.path.endswith("/cancel"):
             self.send_json(HTTPStatus.NOT_IMPLEMENTED, self.response(request_id, "error", issue=error("not_enabled", "Operation cancellation is not enabled yet.", "R6 has no long-running operations to cancel.", False, ["Wait for the current request to finish"])))
             return
@@ -112,6 +119,16 @@ class AssistantHandler(BaseHTTPRequestHandler):
             self.send_json(status, self.response(request_id, "error", issue=error(exc.code, exc.user_message, str(exc), exc.retryable, ["Check provider settings", "Retry only after correcting the request or service"])))
             return
         self.send_json(HTTPStatus.OK, self.response(request_id, "pending_approval", data, ["AI output is pending approval and has not modified workbook content."]))
+
+    def parse_research(self, request_id: str, payload: dict[str, Any], local_file: bool) -> None:
+        body = payload.get("payload") if isinstance(payload.get("payload"), dict) else {}
+        location = str(body.get("path" if local_file else "url", "")).strip()
+        try:
+            data = parse_file(location) if local_file else parse_url(location)
+        except ParseError as exc:
+            self.send_json(HTTPStatus.BAD_REQUEST, self.response(request_id, "error", issue=error(exc.code, exc.user_message, str(exc), False, exc.recovery_actions)))
+            return
+        self.send_json(HTTPStatus.OK, self.response(request_id, "parsed", data))
 
     def create_folders(self, request_id: str, payload: dict[str, Any]) -> None:
         body = payload.get("payload") if isinstance(payload.get("payload"), dict) else {}

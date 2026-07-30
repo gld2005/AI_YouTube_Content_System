@@ -90,7 +90,7 @@ Public Function VideoIdForScriptSheet(ByVal scriptSheetName As String) As String
 Failed:
 End Function
 
-Private Function ChapterIdForRow(ByVal ws As Worksheet, ByVal targetRow As Long) As String
+Public Function ChapterIdForRow(ByVal ws As Worksheet, ByVal targetRow As Long) As String
     Dim rowIndex As Long
     For rowIndex = targetRow To 12 Step -1
         If Left$(CStr(ws.Cells(rowIndex, "A").Value), 3) = "CH-" Then
